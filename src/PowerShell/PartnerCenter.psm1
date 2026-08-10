@@ -53,22 +53,74 @@ if($PSEdition -eq 'Desktop' -and (Test-Path $preloadPath -ErrorAction Ignore))
     catch {}
 }
 
-$netCorePath = (Join-Path $PSScriptRoot -ChildPath "NetCoreAssemblies")
-if($PSEdition -eq 'Core' -and (Test-Path $netCorePath -ErrorAction Ignore))
+$dependencyPath = (Join-Path $PSScriptRoot -ChildPath "Dependencies")
+if($PSEdition -eq 'Desktop' -and (Test-Path $dependencyPath -ErrorAction Ignore))
 {
     try
     {
-        $loadedAssemblies = ([System.AppDomain]::CurrentDomain.GetAssemblies() | %{New-Object -TypeName System.Reflection.AssemblyName -ArgumentList $_.FullName} )
-        Get-ChildItem -ErrorAction Stop -Path $netCorePath -Filter "*.dll" | ForEach-Object {
-            $assemblyName = ([System.Reflection.AssemblyName]::GetAssemblyName($_.FullName))
-            $matches = ($loadedAssemblies | Where-Object {$_.Name -eq $assemblyName.Name})
-            if (-not $matches)
-            {
-                Add-Type -Path $_.FullName -ErrorAction Ignore | Out-Null
-            }
+        Get-ChildItem -ErrorAction Stop -Path $dependencyPath -Filter "*.dll" | ForEach-Object {
+            [System.Reflection.Assembly]::LoadFrom($_.FullName) | Out-Null
         }
     }
     catch {}
+}
+
+# PowerShell Core / PS7+: isolate dependencies to avoid collisions with
+# other modules (for example Az.*) that load different versions of the same DLLs.
+if ($PSEdition -eq 'Core')
+{
+    $script:dependencyDir = Join-Path $PSScriptRoot 'Dependencies'
+
+    if (Test-Path $script:dependencyDir)
+    {
+        try
+        {
+            Add-Type -TypeDefinition @"
+using System;
+using System.IO;
+using System.Reflection;
+using System.Runtime.Loader;
+
+namespace Microsoft.Store.PartnerCenter.PowerShell
+{
+    public static class DependencyResolver
+    {
+        private static readonly AssemblyLoadContext s_alc =
+            new AssemblyLoadContext("PartnerCenter", false);
+        private static string s_dependencyDir;
+
+        public static void Initialize(string dependencyDir)
+        {
+            s_dependencyDir = dependencyDir;
+            AssemblyLoadContext.Default.Resolving += Resolve;
+        }
+
+        public static void Cleanup()
+        {
+            AssemblyLoadContext.Default.Resolving -= Resolve;
+        }
+
+        private static Assembly Resolve(AssemblyLoadContext context, AssemblyName name)
+        {
+            string path = Path.Combine(s_dependencyDir, name.Name + ".dll");
+
+            if (File.Exists(path))
+            {
+                return s_alc.LoadFromAssemblyPath(path);
+            }
+
+            return null;
+        }
+    }
+}
+"@
+            [Microsoft.Store.PartnerCenter.PowerShell.DependencyResolver]::Initialize($script:dependencyDir)
+        }
+        catch
+        {
+            Write-Verbose "Failed to initialize ALC dependency resolver: $_"
+        }
+    }
 }
 
 Import-Module (Join-Path -Path $PSScriptRoot -ChildPath Microsoft.Store.PartnerCenter.PowerShell.dll)

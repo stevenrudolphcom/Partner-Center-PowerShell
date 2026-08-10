@@ -52,25 +52,9 @@
     # Modules that must be imported into the global environment prior to importing this module
     #RequiredModules = @()
 
-    # Assemblies that must be loaded prior to importing this module
-    RequiredAssemblies = '.\Microsoft.Store.PartnerCenter.PowerShell.dll',
-                         '.\Microsoft.Store.PartnerCenter.Azure.Billing.dll',
-                         '.\Microsoft.Store.PartnerCenter.Azure.Subscription.dll',
-                         '.\Microsoft.Graph.Beta.dll',
-                         '.\Microsoft.Graph.Core.dll',
-                         '.\Microsoft.Extensions.Caching.Abstractions.dll',
-                         '.\Microsoft.Extensions.Caching.Memory.dll',
-                         '.\Microsoft.Extensions.DependencyInjection.Abstractions.dll',
-                         '.\Microsoft.Extensions.Options.dll',
-                         '.\Microsoft.Extensions.Primitives.dll',
-                         '.\Microsoft.Identity.Client.dll', 
-                         '.\Microsoft.Identity.Client.Extensions.Msal.dll',
-                         '.\Microsoft.IdentityModel.JsonWebTokens.dll',
-                         '.\Microsoft.IdentityModel.Logging.dll',
-                         '.\Microsoft.IdentityModel.Tokens.dll',
-                         '.\Microsoft.Rest.ClientRuntime.dll', 
-                         '.\Microsoft.Store.PartnerCenter.dll',
-                         '.\System.Runtime.CompilerServices.Unsafe.dll'
+    # Assemblies are loaded by the module bootstrapper to avoid PowerShell 7+
+    # dependency conflicts with other modules that ship overlapping DLLs.
+    RequiredAssemblies = @()
 
     # Script files (.ps1) that are run in the caller's environment prior to importing this module.
     # ScriptsToProcess = @()

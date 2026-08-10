@@ -73,6 +73,13 @@
   </ItemGroup>
 
   <Target Name="CopyFiles" AfterTargets="Build">
+    <ItemGroup>
+      <DependencyAssemblies Include="$(TargetDir)\*.dll" Exclude="$(TargetDir)\$(AssemblyName).dll" />
+    </ItemGroup>
+
     <Copy SourceFiles="@(PreLoadAssemblies)" DestinationFolder="$(TargetDir)\PreloadAssemblies" />
+    <MakeDir Directories="$(TargetDir)\Dependencies" />
+    <Copy SourceFiles="@(DependencyAssemblies)" DestinationFolder="$(TargetDir)\Dependencies" SkipUnchangedFiles="true" />
+    <Delete Files="@(DependencyAssemblies)" />
   </Target>
 </Project>

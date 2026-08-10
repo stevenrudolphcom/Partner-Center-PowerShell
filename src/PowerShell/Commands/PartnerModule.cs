@@ -28,9 +28,19 @@ namespace Microsoft.Store.PartnerCenter.PowerShell.Commands
         private const string PartnerCenterClient = "Partner Center PowerShell";
 
         /// <summary>
+        /// Contains the assemblies from the dependency directory.
+        /// </summary>
+        private static readonly IList<string> DependencyAssemblies = new List<string>();
+
+        /// <summary>
         /// Contains the assemblies from the preload directory.
         /// </summary>
         private static readonly IList<string> PreloadAssemblies = new List<string>();
+
+        /// <summary>
+        /// Gets or sets the path to the dependency assembly folder.
+        /// </summary>
+        private static string DependencyAssemblyFolder { get; set; }
 
         /// <summary>
         /// Gets or sets the path to the preload assembly folder.
@@ -42,11 +52,23 @@ namespace Microsoft.Store.PartnerCenter.PowerShell.Commands
         /// </summary>
         public void OnImport()
         {
+            DependencyAssemblyFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Dependencies");
             PreloadAssemblyFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "PreloadAssemblies");
 
-            foreach (string file in Directory.GetFiles(PreloadAssemblyFolder, "*.dll"))
+            if (Directory.Exists(DependencyAssemblyFolder))
             {
-                PreloadAssemblies.Add(Path.GetFileNameWithoutExtension(file));
+                foreach (string file in Directory.GetFiles(DependencyAssemblyFolder, "*.dll"))
+                {
+                    DependencyAssemblies.Add(Path.GetFileNameWithoutExtension(file));
+                }
+            }
+
+            if (Directory.Exists(PreloadAssemblyFolder))
+            {
+                foreach (string file in Directory.GetFiles(PreloadAssemblyFolder, "*.dll"))
+                {
+                    PreloadAssemblies.Add(Path.GetFileNameWithoutExtension(file));
+                }
             }
 
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
@@ -103,6 +125,11 @@ namespace Microsoft.Store.PartnerCenter.PowerShell.Commands
                 if (PreloadAssemblies.Contains(assembly.Name, StringComparer.InvariantCultureIgnoreCase))
                 {
                     return Assembly.LoadFrom(Path.Combine(PreloadAssemblyFolder, $"{assembly.Name}.dll"));
+                }
+
+                if (DependencyAssemblies.Contains(assembly.Name, StringComparer.InvariantCultureIgnoreCase))
+                {
+                    return Assembly.LoadFrom(Path.Combine(DependencyAssemblyFolder, $"{assembly.Name}.dll"));
                 }
             }
             catch
