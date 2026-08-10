@@ -25,6 +25,11 @@
 * Dependencies
   * Updating dependencies to support the latest version of PowerShell Core
 
+## 3.0.11 - August 2026
+
+* Module 
+  * Update compatibility to PowerShell 7 and AZURE Modules (Authentication)
+
 ## 3.0.10 - July 2020
 
 * Module 
